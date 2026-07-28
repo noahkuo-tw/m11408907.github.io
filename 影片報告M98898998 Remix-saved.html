@@ -1,0 +1,107 @@
+<!DOCTYPE html>
+<html lang="zh-TW" class="scroll-smooth">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>台灣夜市文化與營運轉型研究</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <script>
+        tailwind.config = {
+            theme: {
+                extend: {
+                    colors: {
+                        darkBg: '#0f172a',
+                        cardBg: '#1e293b',
+                        accent: '#fbbf24',
+                        textMain: '#f1f5f9',
+                    },
+                    fontFamily: {
+                        sans: ['Inter', 'system-ui', 'sans-serif'],
+                    }
+                }
+            }
+        }
+    </script>
+    <style>
+        @import url('https://fonts.googleapis.com/css2?family=Inter:wght@300;400;600;800&display=swap');
+        body { background-color: #0f172a; color: #f1f5f9; }
+        .glass { background: rgba(30, 41, 59, 0.7); backdrop-filter: blur(10px); border: 1px solid rgba(255, 255, 255, 0.1); }
+        .ntust-red { color: #ef4444; font-style: italic; }
+    </style>
+</head>
+<body class="min-h-screen p-4 md:p-8">
+
+    <main class="max-w-4xl mx-auto space-y-12">
+        <!-- Header -->
+        <header class="text-center space-y-4">
+            <h1 class="text-4xl md:text-6xl font-extrabold tracking-tight bg-clip-text text-transparent bg-gradient-to-r from-yellow-400 to-orange-500">
+                台灣夜市文化與營運轉型研究
+            </h1>
+            <p class="text-slate-400 text-lg italic">探索庶民美食與國際文化軟實力的交匯</p>
+        </header>
+
+        <!-- Section 1: Infographic -->
+        <section class="space-y-4">
+            <h2 class="text-2xl font-bold text-yellow-500 border-l-4 border-yellow-500 pl-4">數據洞察：夜市轉型趨勢</h2>
+            <div class="glass p-2 rounded-3xl overflow-hidden shadow-2xl">
+                <img src="https://opal.google/board/blobs/6679ab23-75a0-4211-bd2b-8148e9dd5b17" alt="資訊圖表" class="w-full h-auto rounded-2xl transform transition hover:scale-[1.01] duration-500">
+            </div>
+        </section>
+
+        <!-- Section 2: Multimedia -->
+        <section class="grid md:grid-cols-1 gap-6">
+            <h2 class="text-2xl font-bold text-yellow-500 border-l-4 border-yellow-500 pl-4">影音紀錄：現場氛圍</h2>
+            <div class="glass p-6 rounded-3xl space-y-6">
+                <video src="https://opal.google/board/blobs/1250027c-8bbd-4b3e-8dbf-46347a9d6e3f" controls class="w-full rounded-2xl shadow-lg border border-slate-700"></video>
+                <div class="flex items-center gap-4 bg-slate-800 p-4 rounded-full">
+                    <div class="text-sm font-semibold uppercase tracking-widest text-slate-400">背景音樂</div>
+                    <audio src="https://opal.google/board/blobs/0cf80167-0c4c-4edc-aac3-5afa6e2f22d3" controls class="flex-1"></audio>
+                </div>
+            </div>
+        </section>
+
+        <!-- Section 3: Report -->
+        <section class="space-y-8 pb-12">
+            <h2 class="text-2xl font-bold text-yellow-500 border-l-4 border-yellow-500 pl-4">深度研究報告</h2>
+            
+            <!-- Abstract -->
+            <div class="glass p-8 rounded-3xl">
+                <h3 class="text-xl font-semibold mb-4 text-white">摘要重點</h3>
+                <ul class="space-y-3 text-slate-300">
+                    <li class="flex gap-2"><span>✦</span><strong>文化價值</strong>：夜市作為「軟實力」象徵，具備非物質文化遺產潛力。</li>
+                    <li class="flex gap-2"><span>✦</span><strong>消費行為</strong>：受社群媒體與網紅行銷驅動，強調「知覺價值」。</li>
+                    <li class="flex gap-2"><span>✦</span><strong>衛生挑戰</strong>：食品安全硬體設施改良優於單純教育訓練。</li>
+                    <li class="flex gap-2"><span>✦</span><strong>未來轉型</strong>：朝向「永續觀光」與數位化管理發展。</li>
+                </ul>
+            </div>
+
+            <!-- Full Report -->
+            <div class="prose prose-invert prose-slate max-w-none text-slate-300 leading-relaxed">
+                <h3 class="text-yellow-400">一、台灣夜市美食的文化價值與國際形象</h3>
+                <p>台灣夜市不僅是美食場所，更是國家軟實力與文化地標。研究指出，美食多樣性與在地特色是核心。建議參考國際案例，申請非物質文化遺產。</p>
+
+                <h3 class="text-yellow-400">二、社群媒體與網紅行銷對消費行為之影響</h3>
+                <p>Z世代消費者受視覺行銷影響，決策取決於「視覺衝擊」與「排隊熱度」。電子支付的導入提升了年輕族群的消費便利性。</p>
+
+                <h3 class="text-yellow-400">三、食品安全管理與衛生實務之現況與落差</h3>
+                <p>從業人員存在知識與行為的落差。目前管理策略傾向透過優化洗手設備與政府標章，建立消費者信任。</p>
+
+                <h3 class="text-yellow-400">四、疫情後夜市的轉型與永續觀光發展趨勢</h3>
+                <p>後疫情時代，夜市轉向營運外送化與永續指標，強調與地方文創的連結，形成文化路徑。</p>
+
+                <hr class="border-slate-700 my-8">
+
+                <h3 class="text-yellow-400">結論</h3>
+                <p>台灣夜市美食已從在地消費轉變為國際性品牌。需在行銷吸引力、標準化管理與永續韌性間取得平衡。</p>
+            </div>
+        </section>
+    </main>
+
+    <!-- Footer -->
+    <footer class="text-center py-8 border-t border-slate-800 text-slate-500 text-sm space-y-1">
+        <p>【主題探索報告】by <span class="ntust-red">NTUST</span></p>
+        <p>學號：M11819188</p>
+    </footer>
+
+</body>
+</html>
