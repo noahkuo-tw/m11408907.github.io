@@ -1,0 +1,133 @@
+<!DOCTYPE html>
+<html lang="zh-TW">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>智慧眼鏡 | 校園新視野</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <script>
+        tailwind.config = {
+            theme: {
+                extend: {
+                    colors: {
+                        cyber: {
+                            dark: '#0a0a0c',
+                            glass: 'rgba(255, 255, 255, 0.05)',
+                            primary: '#6366f1',
+                            accent: '#a855f7'
+                        }
+                    },
+                    fontFamily: {
+                        sans: ['Inter', 'system-ui', 'sans-serif'],
+                        display: ['Outfit', 'sans-serif']
+                    }
+                }
+            }
+        }
+    </script>
+    <style>
+        @import url('https://fonts.googleapis.com/css2?family=Inter:wght@300;400;600&family=Outfit:wght@400;700;900&display=swap');
+        
+        body {
+            background: radial-gradient(circle at 50% -20%, #1e1b4b, #0a0a0c);
+            min-height: 100vh;
+        }
+
+        .glass {
+            background: rgba(255, 255, 255, 0.03);
+            backdrop-filter: blur(12px);
+            border: 1px solid rgba(255, 255, 255, 0.1);
+        }
+
+        .text-gradient {
+            background: linear-gradient(135deg, #fff 0%, #a5b4fc 100%);
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+        }
+
+        video {
+            width: 100%;
+            border-radius: 1.5rem;
+            box-shadow: 0 20px 50px rgba(0,0,0,0.5);
+            transition: transform 0.5s ease;
+        }
+
+        .hover-lift:hover {
+            transform: translateY(-5px);
+            transition: all 0.3s ease;
+        }
+    </style>
+</head>
+<body class="text-white font-sans overflow-x-hidden">
+
+    <main class="max-w-6xl mx-auto px-6 py-12 md:py-24">
+        <section class="grid grid-cols-1 lg:grid-cols-12 gap-12 items-center">
+            
+            <!-- Left Side: Copy -->
+            <div class="lg:col-span-5 space-y-8 animate-in slide-in-from-left duration-700">
+                <span class="inline-block py-1 px-3 rounded-full bg-indigo-500/20 text-indigo-300 text-sm font-semibold tracking-wider uppercase border border-indigo-500/30">
+                    Next Gen Education
+                </span>
+                
+                <h1 class="text-5xl md:text-7xl font-display font-black leading-tight text-gradient">
+                    智慧眼鏡 <br>校園新視野
+                </h1>
+                
+                <p class="text-lg text-slate-400 leading-relaxed max-w-md">
+                    即時 AI 翻譯與直覺導航隨看即得，讓大學生活聰明更有型。隨身擴充多工虛擬螢幕並守護視力健康，輕量美型設計。
+                </p>
+
+                <div class="flex gap-4">
+                    <button class="bg-indigo-600 hover:bg-indigo-500 px-8 py-4 rounded-2xl font-bold transition-all shadow-lg shadow-indigo-500/20">
+                        立即體驗
+                    </button>
+                    <button class="glass px-8 py-4 rounded-2xl font-bold hover:bg-white/10 transition-all">
+                        了解詳情
+                    </button>
+                </div>
+            </div>
+
+            <!-- Right Side: Video -->
+            <div class="lg:col-span-7 relative group">
+                <div class="absolute -inset-1 bg-gradient-to-r from-indigo-500 to-purple-600 rounded-3xl blur opacity-20 group-hover:opacity-40 transition duration-1000"></div>
+                <div class="glass p-2 rounded-3xl relative">
+                    <video src='https://opal.google/board/blobs/8a351f58-6fb3-4cdc-a7fc-9ba3bdf4b508' alt='media_1' controls autoplay muted loop playsinline></video>
+                </div>
+            </div>
+        </section>
+
+        <!-- Bento Grid Highlights -->
+        <section class="mt-24 grid grid-cols-1 md:grid-cols-3 gap-6">
+            <div class="glass p-8 rounded-3xl hover-lift">
+                <div class="w-12 h-12 bg-indigo-500/20 rounded-xl flex items-center justify-center mb-6 text-indigo-400">⚡</div>
+                <h3 class="text-xl font-bold mb-2">即時 AI 翻譯</h3>
+                <p class="text-slate-400">跨越語言藩籬，全球學術知識即時解讀，你的隨身翻譯官。</p>
+            </div>
+            <div class="glass p-8 rounded-3xl hover-lift">
+                <div class="w-12 h-12 bg-purple-500/20 rounded-xl flex items-center justify-center mb-6 text-purple-400">📍</div>
+                <h3 class="text-xl font-bold mb-2">直覺導航</h3>
+                <p class="text-slate-400">校園動態路線指引，智慧穿戴讓你不再迷失，精準到達目的地。</p>
+            </div>
+            <div class="glass p-8 rounded-3xl hover-lift">
+                <div class="w-12 h-12 bg-emerald-500/20 rounded-xl flex items-center justify-center mb-6 text-emerald-400">👓</div>
+                <h3 class="text-xl font-bold mb-2">極致美型</h3>
+                <p class="text-slate-400">輕量化設計結合未來感外觀，這是屬於你的大學潮流新標配。</p>
+            </div>
+        </section>
+    </main>
+
+    <script>
+        // Micro-animation reveal
+        document.addEventListener('DOMContentLoaded', () => {
+            const elements = document.querySelectorAll('.animate-in');
+            elements.forEach((el, index) => {
+                el.style.opacity = '0';
+                el.style.transition = `opacity 1s ease ${index * 0.2}s`;
+                setTimeout(() => {
+                    el.style.opacity = '1';
+                }, 100);
+            });
+        });
+    </script>
+</body>
+</html>
