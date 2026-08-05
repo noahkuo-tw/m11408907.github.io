@@ -411,11 +411,11 @@
     <!-- 手動切換形狀按鈕組 -->
     <div style="margin-top: 12px; font-size: 11px; color: #9ca3af;">手動測試切換形狀：</div>
     <div class="shape-selector">
-      <button class="shape-btn active" id="btnShape0" onclick="selectShape(0)">❤️ 愛心</button>
-      <button class="shape-btn" id="btnShape1" onclick="selectShape(1)">⭐ 星星</button>
-      <button class="shape-btn" id="btnShape2" onclick="selectShape(2)">🌸 花朵</button>
-      <button class="shape-btn" id="btnShape3" onclick="selectShape(3)">🪐 土星光環</button>
-      <button class="shape-btn" id="btnShape4" onclick="selectShape(4)">🌀 雙螺旋</button>
+      <button class="shape-btn active" id="btnShape0">❤️ 愛心</button>
+      <button class="shape-btn" id="btnShape1">⭐ 星星</button>
+      <button class="shape-btn" id="btnShape2">🌸 花朵</button>
+      <button class="shape-btn" id="btnShape3">🪐 土星光環</button>
+      <button class="shape-btn" id="btnShape4">🌀 雙螺旋</button>
     </div>
 
     <div class="log-box" id="logBox">診斷日誌：等待點擊啟動...</div>
@@ -436,7 +436,7 @@
   <div class="video-container">
     <div id="startCamOverlay">
       <div style="font-size: 12px; margin-bottom: 10px; color: #e5e7eb;">請確保透過 http://localhost:8000 存取</div>
-      <button class="start-btn" onclick="requestWebcamDirectly()">點此啟動攝影機 📹</button>
+      <button class="start-btn" id="btnStartCam">點此啟動攝影機 📹</button>
     </div>
     <video id="inputVideo" playsinline></video>
     <canvas id="cameraCanvas"></canvas>
@@ -446,7 +446,7 @@
   <!-- JavaScript 邏輯實作 -->
   <script>
     // ==========================================
-    // 1. 全域變數宣告區 (必須放在最上方避免 TDZ 錯誤)
+    // 1. 全域變數與函數定義
     // ==========================================
     var isRightHandDetected = false;
     var isFistClosed = false;
@@ -460,45 +460,45 @@
 
     function logMsg(msg) {
       console.log('[系統日誌]', msg);
-      const logBox = document.getElementById('logBox');
+      var logBox = document.getElementById('logBox');
       if (logBox) {
         logBox.textContent = msg;
       }
     }
 
-    // --- 2. 日期時間與 UI 更新 ---
+    // --- 日期時間更新 ---
     function updateDateTime() {
-      const now = new Date();
-      const year = now.getFullYear();
-      const month = String(now.getMonth() + 1).padStart(2, '0');
-      const day = String(now.getDate()).padStart(2, '0');
-      const hours = String(now.getHours()).padStart(2, '0');
-      const minutes = String(now.getMinutes()).padStart(2, '0');
-      const seconds = String(now.getSeconds()).padStart(2, '0');
+      var now = new Date();
+      var year = now.getFullYear();
+      var month = String(now.getMonth() + 1).padStart(2, '0');
+      var day = String(now.getDate()).padStart(2, '0');
+      var hours = String(now.getHours()).padStart(2, '0');
+      var minutes = String(now.getMinutes()).padStart(2, '0');
+      var seconds = String(now.getSeconds()).padStart(2, '0');
       
-      const elem = document.getElementById('datetimeStr');
-      if (elem) elem.textContent = `${year}/${month}/${day} ${hours}:${minutes}:${seconds}`;
+      var elem = document.getElementById('datetimeStr');
+      if (elem) elem.textContent = year + '/' + month + '/' + day + ' ' + hours + ':' + minutes + ':' + seconds;
     }
     setInterval(updateDateTime, 1000);
     updateDateTime();
 
-    // --- 3. 粒子系統設定 (Particle System) ---
-    const pCanvas = document.getElementById('particleCanvas');
-    const pCtx = pCanvas.getContext('2d');
+    // --- 粒子系統 (Particle System) ---
+    var pCanvas = document.getElementById('particleCanvas');
+    var pCtx = pCanvas.getContext('2d');
 
-    let width = pCanvas.width = window.innerWidth;
-    let height = pCanvas.height = window.innerHeight;
+    var width = pCanvas.width = window.innerWidth;
+    var height = pCanvas.height = window.innerHeight;
 
-    window.addEventListener('resize', () => {
+    window.addEventListener('resize', function() {
       width = pCanvas.width = window.innerWidth;
       height = pCanvas.height = window.innerHeight;
       generateShapeTargets(currentShapeIndex);
     });
 
-    const PARTICLE_COUNT = 1200;
-    const particles = [];
+    var PARTICLE_COUNT = 1200;
+    var particles = [];
 
-    const SHAPES = [
+    var SHAPES = [
       { name: '❤️ 愛心', id: 'heart' },
       { name: '⭐ 星星', id: 'star' },
       { name: '🌸 花朵', id: 'flower' },
@@ -506,7 +506,7 @@
       { name: '🌀 雙螺旋', id: 'spiral' }
     ];
 
-    const PALETTES = [
+    var PALETTES = [
       { name: '賽博霓虹', colors: ['#00f2fe', '#4facfe', '#f093fb', '#f5576c', '#5ee7df'] },
       { name: '璀璨金耀', colors: ['#ffe066', '#f72585', '#7209b7', '#4cc9f0', '#ffb703'] },
       { name: '翡翠極光', colors: ['#10b981', '#34d399', '#059669', '#6ee7b7', '#a7f3d0'] },
@@ -515,8 +515,196 @@
       { name: '電光琉璃', colors: ['#06b6d4', '#3b82f6', '#1d4ed8', '#60a5fa', '#93c5fd'] }
     ];
 
-    class Particle {
-      constructor() {
-        this.x = Math.random() * width;
-        this.y = Math.random() * height;
-        this.targetX = this
+    function Particle() {
+      this.x = Math.random() * width;
+      this.y = Math.random() * height;
+      this.targetX = this.x;
+      this.targetY = this.y;
+      this.baseX = this.x;
+      this.baseY = this.y;
+      this.size = Math.random() * 2.5 + 1.5;
+      this.color = '#38bdf8';
+      this.ease = 0.08;
+    }
+
+    Particle.prototype.update = function(isClosed, handDistanceScale, isHandPresent) {
+      var centerX = width / 2;
+      var centerY = height / 2;
+
+      var activeTargetX = centerX + (this.baseX - centerX) * handDistanceScale;
+      var activeTargetY = centerY + (this.baseY - centerY) * handDistanceScale;
+
+      if (isClosed) {
+        activeTargetX = centerX + (this.baseX - centerX) * 0.15 * handDistanceScale;
+        activeTargetY = centerY + (this.baseY - centerY) * 0.15 * handDistanceScale;
+      } else {
+        activeTargetX += Math.sin(Date.now() * 0.002 + this.size) * 12;
+        activeTargetY += Math.cos(Date.now() * 0.002 + this.size) * 12;
+      }
+
+      this.x += (activeTargetX - this.x) * this.ease;
+      this.y += (activeTargetY - this.y) * this.ease;
+    };
+
+    Particle.prototype.draw = function(ctx) {
+      ctx.beginPath();
+      ctx.arc(this.x, this.y, this.size, 0, Math.PI * 2);
+      ctx.fillStyle = this.color;
+      ctx.shadowBlur = 10;
+      ctx.shadowColor = this.color;
+      ctx.fill();
+    };
+
+    for (var i = 0; i < PARTICLE_COUNT; i++) {
+      particles.push(new Particle());
+    }
+
+    function generateShapeTargets(shapeIndex) {
+      var centerX = width / 2;
+      var centerY = height / 2;
+      var minDim = Math.min(width, height) * 0.35;
+      var currentPalette = PALETTES[currentPaletteIndex].colors;
+
+      for (var i = 0; i < PARTICLE_COUNT; i++) {
+        var p = particles[i];
+        var t = (i / PARTICLE_COUNT) * Math.PI * 2;
+        var tx = 0;
+        var ty = 0;
+
+        switch (shapeIndex) {
+          case 0:
+            {
+              var angle = t * 2;
+              var r = minDim * 0.04;
+              tx = 16 * Math.pow(Math.sin(angle), 3);
+              ty = -(13 * Math.cos(angle) - 5 * Math.cos(2 * angle) - 2 * Math.cos(3 * angle) - Math.cos(4 * angle));
+              tx = tx * r + (Math.random() - 0.5) * 20;
+              ty = ty * r + (Math.random() - 0.5) * 20;
+            }
+            break;
+
+          case 1:
+            {
+              var starPoints = 5;
+              var angle = t * starPoints;
+              var innerRadius = minDim * 0.4;
+              var outerRadius = minDim * 0.85;
+              var r = innerRadius + (outerRadius - innerRadius) * Math.pow(Math.abs(Math.sin(angle * 2.5)), 2);
+              tx = r * Math.cos(t);
+              ty = r * Math.sin(t);
+            }
+            break;
+
+          case 2:
+            {
+              var k = 6;
+              var r = minDim * (0.3 + 0.6 * Math.abs(Math.cos(k * t / 2)));
+              tx = r * Math.cos(t);
+              ty = r * Math.sin(t);
+            }
+            break;
+
+          case 3:
+            {
+              if (i < PARTICLE_COUNT * 0.3) {
+                var phi = Math.acos(2 * Math.random() - 1);
+                var theta = 2 * Math.PI * Math.random();
+                var r = minDim * 0.35 * Math.cbrt(Math.random());
+                tx = r * Math.sin(phi) * Math.cos(theta);
+                ty = r * Math.sin(phi) * Math.sin(theta);
+              } else {
+                var ringRadius = minDim * (0.65 + Math.random() * 0.3);
+                var ringAngle = t * 3;
+                var rx = ringRadius * Math.cos(ringAngle);
+                var ry = ringRadius * 0.3 * Math.sin(ringAngle);
+                var tilt = 0.45;
+                tx = rx * Math.cos(tilt) - ry * Math.sin(tilt);
+                ty = rx * Math.sin(tilt) + ry * Math.cos(tilt);
+              }
+            }
+            break;
+
+          case 4:
+            {
+              var turns = 4;
+              var angle = t * turns * Math.PI;
+              var strand = (i % 2 === 0) ? 1 : -1;
+              var radius = minDim * 0.6;
+              var len = (i / PARTICLE_COUNT - 0.5) * minDim * 1.6;
+
+              tx = Math.cos(angle) * radius * 0.4 + strand * 30;
+              ty = len;
+            }
+            break;
+        }
+
+        p.baseX = centerX + tx;
+        p.baseY = centerY + ty;
+        p.color = currentPalette[i % currentPalette.length];
+      }
+    }
+
+    generateShapeTargets(currentShapeIndex);
+
+    function selectShape(idx) {
+      currentShapeIndex = idx;
+      for (var i = 0; i < 5; i++) {
+        var btn = document.getElementById('btnShape' + i);
+        if (btn) btn.classList.toggle('active', i === idx);
+      }
+      var nameElem = document.getElementById('currentShapeName');
+      if (nameElem) nameElem.textContent = SHAPES[idx].name;
+      generateShapeTargets(currentShapeIndex);
+      logMsg('切換形狀至：' + SHAPES[idx].name);
+    }
+    window.selectShape = selectShape;
+
+    function triggerNextShapeAndColor() {
+      fistCounter++;
+      var fistElem = document.getElementById('fistCount');
+      if (fistElem) fistElem.textContent = fistCounter + ' 次';
+
+      currentShapeIndex = (currentShapeIndex + 1) % SHAPES.length;
+      selectShape(currentShapeIndex);
+
+      currentPaletteIndex = (currentPaletteIndex + 1) % PALETTES.length;
+      var themeElem = document.getElementById('colorThemeName');
+      if (themeElem) themeElem.textContent = PALETTES[currentPaletteIndex].name;
+
+      generateShapeTargets(currentShapeIndex);
+    }
+
+    function animateParticles() {
+      pCtx.fillStyle = 'rgba(3, 7, 18, 0.25)';
+      pCtx.fillRect(0, 0, width, height);
+
+      pCtx.globalCompositeOperation = 'lighter';
+
+      for (var i = 0; i < PARTICLE_COUNT; i++) {
+        particles[i].update(isFistClosed, currentDistanceScale, isRightHandDetected);
+        particles[i].draw(pCtx);
+      }
+
+      pCtx.globalCompositeOperation = 'source-over';
+      requestAnimationFrame(animateParticles);
+    }
+    animateParticles();
+
+
+    // --- MediaPipe & 直連 Camera 偵測邏輯 ---
+    var videoElement = document.getElementById('inputVideo');
+    var cameraCanvas = document.getElementById('cameraCanvas');
+    var cameraCtx = cameraCanvas.getContext('2d');
+
+    function initMediaPipe() {
+      try {
+        if (typeof Hands === 'undefined') {
+          logMsg('錯誤：MediaPipe CDN 腳本未成功載入，請確認網路連線');
+          return false;
+        }
+
+        hands = new Hands({
+          locateFile: function(file) { return 'https://cdn.jsdelivr.net/npm/@mediapipe/hands/' + file; }
+        });
+
+        hands.setOptions
