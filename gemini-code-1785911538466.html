@@ -150,7 +150,7 @@
     #startCamOverlay {
       position: absolute;
       inset: 0;
-      background: rgba(15, 23, 42, 0.9);
+      background: rgba(15, 23, 42, 0.92);
       display: flex;
       flex-direction: column;
       justify-content: center;
@@ -164,7 +164,7 @@
       background: linear-gradient(135deg, #38bdf8, #818cf8);
       color: #ffffff;
       border: none;
-      padding: 10px 20px;
+      padding: 12px 24px;
       border-radius: 12px;
       font-size: 13px;
       font-weight: 700;
@@ -292,18 +292,20 @@
       background: rgba(255, 255, 255, 0.15);
     }
 
-    /* 系統日誌提示 */
+    /* 系統診斷日誌框 */
     .log-box {
       margin-top: 12px;
-      padding: 8px 12px;
-      background: rgba(0, 0, 0, 0.4);
+      padding: 10px;
+      background: rgba(0, 0, 0, 0.6);
+      border: 1px solid rgba(255, 255, 255, 0.1);
       border-radius: 8px;
       font-size: 11px;
       color: #38bdf8;
-      font-family: monospace;
+      font-family: 'Consolas', monospace;
       word-break: break-all;
-      max-height: 60px;
+      max-height: 80px;
       overflow-y: auto;
+      line-height: 1.4;
     }
 
     /* 指示輔助說明框 */
@@ -370,7 +372,7 @@
 
     <div class="status-item">
       <span class="status-label">系統狀態</span>
-      <span id="systemStatus" class="status-value warning">初始化中...</span>
+      <span id="systemStatus" class="status-value warning">請點擊啟動鏡頭</span>
     </div>
 
     <div class="status-item">
@@ -416,7 +418,7 @@
       <button class="shape-btn" id="btnShape4" onclick="selectShape(4)">🌀 雙螺旋</button>
     </div>
 
-    <div class="log-box" id="logBox">訊息記錄：初始化完成</div>
+    <div class="log-box" id="logBox">診斷日誌：等待點擊啟動...</div>
   </div>
 
   <!-- 左下角互動提示說明 -->
@@ -433,8 +435,8 @@
   <!-- 右下角鏡頭與骨架預覽 HUD -->
   <div class="video-container">
     <div id="startCamOverlay">
-      <div style="font-size: 12px; margin-bottom: 10px; color: #e5e7eb;">請允許瀏覽器存取攝影機</div>
-      <button class="start-btn" onclick="startCameraManual()">點此啟動攝影機 📹</button>
+      <div style="font-size: 12px; margin-bottom: 10px; color: #e5e7eb;">請確保透過 http://localhost:8000 存取</div>
+      <button class="start-btn" onclick="requestWebcamDirectly()">點此啟動攝影機 📹</button>
     </div>
     <video id="inputVideo" playsinline></video>
     <canvas id="cameraCanvas"></canvas>
@@ -443,13 +445,28 @@
 
   <!-- JavaScript 邏輯實作 -->
   <script>
+    // ==========================================
+    // 1. 全域變數宣告區 (必須放在最上方避免 TDZ 錯誤)
+    // ==========================================
+    var isRightHandDetected = false;
+    var isFistClosed = false;
+    var previousFistState = false;
+    var currentDistanceScale = 1.0;
+    var hands = null;
+    var pose = null;
+    var currentShapeIndex = 0;
+    var currentPaletteIndex = 0;
+    var fistCounter = 0;
+
     function logMsg(msg) {
-      console.log(msg);
+      console.log('[系統日誌]', msg);
       const logBox = document.getElementById('logBox');
-      if (logBox) logBox.textContent = msg;
+      if (logBox) {
+        logBox.textContent = msg;
+      }
     }
 
-    // --- 1. 日期時間與 UI 更新 ---
+    // --- 2. 日期時間與 UI 更新 ---
     function updateDateTime() {
       const now = new Date();
       const year = now.getFullYear();
@@ -459,12 +476,13 @@
       const minutes = String(now.getMinutes()).padStart(2, '0');
       const seconds = String(now.getSeconds()).padStart(2, '0');
       
-      document.getElementById('datetimeStr').textContent = `${year}/${month}/${day} ${hours}:${minutes}:${seconds}`;
+      const elem = document.getElementById('datetimeStr');
+      if (elem) elem.textContent = `${year}/${month}/${day} ${hours}:${minutes}:${seconds}`;
     }
     setInterval(updateDateTime, 1000);
     updateDateTime();
 
-    // --- 2. 粒子系統設定 (Particle System) ---
+    // --- 3. 粒子系統設定 (Particle System) ---
     const pCanvas = document.getElementById('particleCanvas');
     const pCtx = pCanvas.getContext('2d');
 
@@ -480,7 +498,6 @@
     const PARTICLE_COUNT = 1200;
     const particles = [];
 
-    // 5種形狀定義：愛心、星星、花朵、土星光環、雙螺旋
     const SHAPES = [
       { name: '❤️ 愛心', id: 'heart' },
       { name: '⭐ 星星', id: 'star' },
@@ -489,7 +506,6 @@
       { name: '🌀 雙螺旋', id: 'spiral' }
     ];
 
-    // 色彩主題調色盤列表 (顯著不同的絢麗色彩組合)
     const PALETTES = [
       { name: '賽博霓虹', colors: ['#00f2fe', '#4facfe', '#f093fb', '#f5576c', '#5ee7df'] },
       { name: '璀璨金耀', colors: ['#ffe066', '#f72585', '#7209b7', '#4cc9f0', '#ffb703'] },
@@ -499,395 +515,8 @@
       { name: '電光琉璃', colors: ['#06b6d4', '#3b82f6', '#1d4ed8', '#60a5fa', '#93c5fd'] }
     ];
 
-    let currentShapeIndex = 0;
-    let currentPaletteIndex = 0;
-    let fistCounter = 0;
-
-    // 粒子類別
     class Particle {
       constructor() {
         this.x = Math.random() * width;
         this.y = Math.random() * height;
-        this.targetX = this.x;
-        this.targetY = this.y;
-        this.baseX = this.x;
-        this.baseY = this.y;
-        this.size = Math.random() * 2.5 + 1.5;
-        this.color = '#38bdf8';
-        this.targetColor = '#38bdf8';
-        this.vx = (Math.random() - 0.5) * 1.5;
-        this.vy = (Math.random() - 0.5) * 1.5;
-        this.friction = 0.92;
-        this.ease = 0.08;
-      }
-
-      update(isClosed, handDistanceScale, isHandPresent) {
-        const centerX = width / 2;
-        const centerY = height / 2;
-
-        let activeTargetX = centerX + (this.baseX - centerX) * handDistanceScale;
-        let activeTargetY = centerY + (this.baseY - centerY) * handDistanceScale;
-
-        if (isClosed) {
-          // 握合時：粒子向中心強力緊縮收攏
-          activeTargetX = centerX + (this.baseX - centerX) * 0.15 * handDistanceScale;
-          activeTargetY = centerY + (this.baseY - centerY) * 0.15 * handDistanceScale;
-        } else {
-          // 張開時：粒子向外擴張並微幅發散飄動
-          activeTargetX += Math.sin(Date.now() * 0.002 + this.size) * 12;
-          activeTargetY += Math.cos(Date.now() * 0.002 + this.size) * 12;
-        }
-
-        // 平滑移動至目標位置
-        this.x += (activeTargetX - this.x) * this.ease;
-        this.y += (activeTargetY - this.y) * this.ease;
-      }
-
-      draw(ctx) {
-        ctx.beginPath();
-        ctx.arc(this.x, this.y, this.size, 0, Math.PI * 2);
-        ctx.fillStyle = this.color;
-        ctx.shadowBlur = 10;
-        ctx.shadowColor = this.color;
-        ctx.fill();
-      }
-    }
-
-    // 初始化粒子群
-    for (let i = 0; i < PARTICLE_COUNT; i++) {
-      particles.push(new Particle());
-    }
-
-    // 生成各種數學形狀目標位置
-    function generateShapeTargets(shapeIndex) {
-      const centerX = width / 2;
-      const centerY = height / 2;
-      const minDim = Math.min(width, height) * 0.35;
-      const currentPalette = PALETTES[currentPaletteIndex].colors;
-
-      for (let i = 0; i < PARTICLE_COUNT; i++) {
-        const p = particles[i];
-        const t = (i / PARTICLE_COUNT) * Math.PI * 2;
-        let tx = 0;
-        let ty = 0;
-
-        switch (shapeIndex) {
-          case 0: // ❤️ 愛心 (Heart)
-            {
-              const angle = t * 2;
-              const r = minDim * 0.04;
-              tx = 16 * Math.pow(Math.sin(angle), 3);
-              ty = -(13 * Math.cos(angle) - 5 * Math.cos(2 * angle) - 2 * Math.cos(3 * angle) - Math.cos(4 * angle));
-              tx = tx * r + (Math.random() - 0.5) * 20;
-              ty = ty * r + (Math.random() - 0.5) * 20;
-            }
-            break;
-
-          case 1: // ⭐ 五角星 (Star)
-            {
-              const starPoints = 5;
-              const angle = t * starPoints;
-              const innerRadius = minDim * 0.4;
-              const outerRadius = minDim * 0.85;
-              const r = innerRadius + (outerRadius - innerRadius) * Math.pow(Math.abs(Math.sin(angle * 2.5)), 2);
-              tx = r * Math.cos(t);
-              ty = r * Math.sin(t);
-            }
-            break;
-
-          case 2: // 🌸 花朵 (Flower)
-            {
-              const k = 6;
-              const r = minDim * (0.3 + 0.6 * Math.abs(Math.cos(k * t / 2)));
-              tx = r * Math.cos(t);
-              ty = r * Math.sin(t);
-            }
-            break;
-
-          case 3: // 🪐 土星光環 (Saturn)
-            {
-              if (i < PARTICLE_COUNT * 0.3) {
-                const phi = Math.acos(2 * Math.random() - 1);
-                const theta = 2 * Math.PI * Math.random();
-                const r = minDim * 0.35 * Math.cbrt(Math.random());
-                tx = r * Math.sin(phi) * Math.cos(theta);
-                ty = r * Math.sin(phi) * Math.sin(theta);
-              } else {
-                const ringRadius = minDim * (0.65 + Math.random() * 0.3);
-                const ringAngle = t * 3;
-                const rx = ringRadius * Math.cos(ringAngle);
-                const ry = ringRadius * 0.3 * Math.sin(ringAngle);
-                const tilt = 0.45;
-                tx = rx * Math.cos(tilt) - ry * Math.sin(tilt);
-                ty = rx * Math.sin(tilt) + ry * Math.cos(tilt);
-              }
-            }
-            break;
-
-          case 4: // 🌀 雙螺旋 (Spiral)
-            {
-              const turns = 4;
-              const angle = t * turns * Math.PI;
-              const strand = (i % 2 === 0) ? 1 : -1;
-              const radius = minDim * 0.6;
-              const len = (i / PARTICLE_COUNT - 0.5) * minDim * 1.6;
-
-              tx = Math.cos(angle) * radius * 0.4 + strand * 30;
-              ty = len;
-            }
-            break;
-        }
-
-        p.baseX = centerX + tx;
-        p.baseY = centerY + ty;
-        p.color = currentPalette[i % currentPalette.length];
-      }
-    }
-
-    generateShapeTargets(currentShapeIndex);
-
-    // 手動切換形狀
-    function selectShape(idx) {
-      currentShapeIndex = idx;
-      document.querySelectorAll('.shape-btn').forEach((btn, i) => {
-        btn.classList.toggle('active', i === idx);
-      });
-      document.getElementById('currentShapeName').textContent = SHAPES[idx].name;
-      generateShapeTargets(currentShapeIndex);
-      logMsg(`切換形狀至：${SHAPES[idx].name}`);
-    }
-
-    // 切換色彩與形狀（握合觸發）
-    function triggerNextShapeAndColor() {
-      fistCounter++;
-      document.getElementById('fistCount').textContent = `${fistCounter} 次`;
-
-      currentShapeIndex = (currentShapeIndex + 1) % SHAPES.length;
-      selectShape(currentShapeIndex);
-
-      currentPaletteIndex = (currentPaletteIndex + 1) % PALETTES.length;
-      document.getElementById('colorThemeName').textContent = PALETTES[currentPaletteIndex].name;
-
-      generateShapeTargets(currentShapeIndex);
-    }
-
-    // 粒子繪製主迴圈
-    function animateParticles() {
-      pCtx.fillStyle = 'rgba(3, 7, 18, 0.25)';
-      pCtx.fillRect(0, 0, width, height);
-
-      pCtx.globalCompositeOperation = 'lighter';
-
-      for (let i = 0; i < PARTICLE_COUNT; i++) {
-        particles[i].update(isFistClosed, currentDistanceScale, isRightHandDetected);
-        particles[i].draw(pCtx);
-      }
-
-      pCtx.globalCompositeOperation = 'source-over';
-      requestAnimationFrame(animateParticles);
-    }
-    animateParticles();
-
-
-    // --- 3. MediaPipe Hands & Pose 設定 ---
-    const videoElement = document.getElementById('inputVideo');
-    const cameraCanvas = document.getElementById('cameraCanvas');
-    const cameraCtx = cameraCanvas.getContext('2d');
-
-    let isRightHandDetected = false;
-    let isFistClosed = false;
-    let previousFistState = false;
-    let currentDistanceScale = 1.0;
-    let cameraInstance = null;
-
-    let hands = null;
-    let pose = null;
-
-    function initMediaPipe() {
-      logMsg('正在初始化 MediaPipe 偵測引擎...');
-      
-      try {
-        hands = new Hands({
-          locateFile: (file) => `https://cdn.jsdelivr.net/npm/@mediapipe/hands/${file}`
-        });
-
-        hands.setOptions({
-          maxNumHands: 2,
-          modelComplexity: 1,
-          minDetectionConfidence: 0.6,
-          minTrackingConfidence: 0.6
-        });
-
-        pose = new Pose({
-          locateFile: (file) => `https://cdn.jsdelivr.net/npm/@mediapipe/pose/${file}`
-        });
-
-        pose.setOptions({
-          modelComplexity: 1,
-          smoothLandmarks: true,
-          minDetectionConfidence: 0.5,
-          minTrackingConfidence: 0.5
-        });
-
-        let currentPoseLandmarks = null;
-
-        pose.onResults((results) => {
-          currentPoseLandmarks = results.poseLandmarks;
-        });
-
-        hands.onResults((results) => {
-          cameraCanvas.width = videoElement.videoWidth || 320;
-          cameraCanvas.height = videoElement.videoHeight || 240;
-
-          cameraCtx.save();
-          cameraCtx.clearRect(0, 0, cameraCanvas.width, cameraCanvas.height);
-          cameraCtx.drawImage(results.image, 0, 0, cameraCanvas.width, cameraCanvas.height);
-
-          // 繪製姿態骨架
-          if (currentPoseLandmarks && window.drawConnectors) {
-            drawConnectors(cameraCtx, currentPoseLandmarks, POSE_CONNECTIONS, { color: 'rgba(56, 189, 248, 0.5)', lineWidth: 2 });
-            drawLandmarks(cameraCtx, currentPoseLandmarks, { color: '#38bdf8', lineWidth: 1, radius: 3 });
-          }
-
-          isRightHandDetected = false;
-          let rightHandLandmarks = null;
-
-          if (results.multiHandLandmarks && results.multiHandedness) {
-            for (let i = 0; i < results.multiHandLandmarks.length; i++) {
-              const landmarks = results.multiHandLandmarks[i];
-              const handedness = results.multiHandedness[i];
-
-              const isRight = handedness.label === 'Right';
-              const strokeColor = isRight ? '#4ade80' : '#f43f5e';
-
-              if (window.drawConnectors) {
-                drawConnectors(cameraCtx, landmarks, HAND_CONNECTIONS, { color: strokeColor, lineWidth: 2 });
-                drawLandmarks(cameraCtx, landmarks, { color: '#ffffff', lineWidth: 1, radius: 3 });
-              }
-
-              if (isRight) {
-                isRightHandDetected = true;
-                rightHandLandmarks = landmarks;
-              }
-            }
-          }
-
-          cameraCtx.restore();
-
-          // UI 狀態更新
-          const handDetectedElem = document.getElementById('handDetected');
-          const handGestureElem = document.getElementById('handGesture');
-          const distanceValueElem = document.getElementById('distanceValue');
-          const distanceBarElem = document.getElementById('distanceBar');
-
-          if (isRightHandDetected && rightHandLandmarks) {
-            handDetectedElem.textContent = '已偵測到右手';
-            handDetectedElem.className = 'status-value active';
-
-            const wrist = rightHandLandmarks[0];
-            const middleMcp = rightHandLandmarks[9];
-            const palmSize = Math.hypot(middleMcp.x - wrist.x, middleMcp.y - wrist.y);
-
-            const fingerTips = [8, 12, 16, 20];
-            let totalTipDist = 0;
-            fingerTips.forEach(tipIdx => {
-              const tip = rightHandLandmarks[tipIdx];
-              totalTipDist += Math.hypot(tip.x - wrist.x, tip.y - wrist.y);
-            });
-            const avgTipDist = totalTipDist / fingerTips.length;
-
-            const extensionRatio = avgTipDist / (palmSize || 0.001);
-
-            if (extensionRatio < 1.35) {
-              isFistClosed = true;
-            } else if (extensionRatio > 1.55) {
-              isFistClosed = false;
-            }
-
-            if (isFistClosed) {
-              handGestureElem.textContent = '✊ 握合 (合起來)';
-              handGestureElem.className = 'status-value closed';
-            } else {
-              handGestureElem.textContent = '✋ 張開 (發散)';
-              handGestureElem.className = 'status-value active';
-            }
-
-            if (isFistClosed && !previousFistState) {
-              triggerNextShapeAndColor();
-            }
-            previousFistState = isFistClosed;
-
-            const clampedPalm = Math.max(0.08, Math.min(0.32, palmSize));
-            const normalizedScale = 1.8 - ((clampedPalm - 0.08) / (0.32 - 0.08)) * 1.4;
-            currentDistanceScale = Math.max(0.3, Math.min(2.0, normalizedScale));
-
-            distanceValueElem.textContent = `${currentDistanceScale.toFixed(2)}x (${clampedPalm > 0.2 ? '靠近螢幕' : '遠離螢幕'})`;
-            distanceBarElem.style.width = `${((currentDistanceScale - 0.3) / 1.7) * 100}%`;
-
-          } else {
-            handDetectedElem.textContent = '尋找右手中...';
-            handDetectedElem.className = 'status-value';
-            handGestureElem.textContent = '未偵測';
-            handGestureElem.className = 'status-value';
-            
-            currentDistanceScale = 1.0;
-            distanceValueElem.textContent = '1.00x';
-            distanceBarElem.style.width = '50%';
-            isFistClosed = false;
-            previousFistState = false;
-          }
-        });
-
-        logMsg('MediaPipe 模型初始化完成');
-      } catch (err) {
-        logMsg(`MediaPipe 載入錯誤：${err.message}`);
-      }
-    }
-
-    function startCameraManual() {
-      const overlay = document.getElementById('startCamOverlay');
-      const sysStatus = document.getElementById('systemStatus');
-
-      logMsg('正在請求視訊鏡頭存取權限...');
-      sysStatus.textContent = '開啟攝影機中...';
-
-      if (!hands || !pose) {
-        initMediaPipe();
-      }
-
-      try {
-        cameraInstance = new Camera(videoElement, {
-          onFrame: async () => {
-            if (hands) await hands.send({ image: videoElement });
-            if (pose) await pose.send({ image: videoElement });
-          },
-          width: 640,
-          height: 480
-        });
-
-        cameraInstance.start()
-          .then(() => {
-            overlay.style.display = 'none';
-            sysStatus.textContent = '系統正常運作';
-            sysStatus.className = 'status-value active';
-            logMsg('攝影機已成功啟動！');
-          })
-          .catch(err => {
-            logMsg(`攝影機啟動失敗：${err.message}`);
-            sysStatus.textContent = '攝影機存取被阻擋';
-            sysStatus.className = 'status-value closed';
-            alert('無法存取攝影機。請確認瀏覽器已允許攝影機權限，且無其他應用程式 (如 Zoom/Meet/OBS) 正在使用鏡頭。');
-          });
-      } catch (e) {
-        logMsg(`攝影機初始化例外：${e.message}`);
-      }
-    }
-
-    // 自動嘗試啟動
-    window.addEventListener('load', () => {
-      initMediaPipe();
-      startCameraManual();
-    });
-  </script>
-</body>
-</html>
+        this.targetX = this
