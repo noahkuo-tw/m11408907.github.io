@@ -1,11 +1,11 @@
 <!DOCTYPE html>
 <html lang="zh-TW">
 <head>
-  <meta charset="UTF-8">
+  <meta charset="utf-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>M88888888 欒帥資訊牆 - MediaPipe 粒子互動偵測系統</title>
+  <title>M88888888 欒帥資訊牆 - MediaPipe 粒子互動系統</title>
   
-  <!-- MediaPipe & Camera Utils CDNs -->
+  <!-- 引入 MediaPipe 官方 JS CDNs -->
   <script src="https://cdn.jsdelivr.net/npm/@mediapipe/camera_utils/camera_utils.js" crossorigin="anonymous"></script>
   <script src="https://cdn.jsdelivr.net/npm/@mediapipe/control_utils/control_utils.js" crossorigin="anonymous"></script>
   <script src="https://cdn.jsdelivr.net/npm/@mediapipe/drawing_utils/drawing_utils.js" crossorigin="anonymous"></script>
@@ -25,12 +25,12 @@
       height: 100%;
       overflow: hidden;
       background-color: #030712;
-      font-family: 'PingFang TC', 'Microsoft JhengHei', system-ui, -apple-system, sans-serif;
-      color: #f3f4f6;
+      font-family: 'PingFang TC', 'Microsoft JhengHei', sans-serif;
+      color: #ffffff;
     }
 
     /* 全螢幕背景粒子 Canvas */
-    #particleCanvas {
+    #particle_canvas {
       position: absolute;
       top: 0;
       left: 0;
@@ -39,471 +39,200 @@
       z-index: 1;
     }
 
-    /* UI 頂部標題列 */
+    /* 頂部資訊 Bar */
     header {
       position: absolute;
       top: 0;
       left: 0;
       width: 100%;
-      height: 70px;
+      height: 65px;
       z-index: 10;
       display: flex;
       justify-content: space-between;
       align-items: center;
-      padding: 0 28px;
-      background: rgba(15, 23, 42, 0.65);
-      backdrop-filter: blur(12px);
+      padding: 0 24px;
+      background: rgba(15, 23, 42, 0.7);
+      backdrop-filter: blur(10px);
       border-bottom: 1px solid rgba(255, 255, 255, 0.1);
-      box-shadow: 0 4px 30px rgba(0, 0, 0, 0.5);
     }
 
     .header-title {
-      font-size: 24px;
-      font-weight: 800;
+      font-size: 22px;
+      font-weight: bold;
       letter-spacing: 2px;
       background: linear-gradient(135deg, #38bdf8, #818cf8, #c084fc);
       -webkit-background-clip: text;
       -webkit-text-fill-color: transparent;
-      text-shadow: 0 0 20px rgba(129, 140, 248, 0.3);
     }
 
     .header-datetime {
-      display: flex;
-      align-items: center;
-      gap: 16px;
-      font-family: 'Courier New', Courier, monospace;
+      font-family: monospace;
       font-size: 16px;
       color: #38bdf8;
       background: rgba(15, 23, 42, 0.8);
-      padding: 8px 16px;
+      padding: 6px 16px;
       border-radius: 20px;
       border: 1px solid rgba(56, 189, 248, 0.3);
     }
 
-    .live-badge {
-      display: inline-flex;
-      align-items: center;
-      gap: 6px;
-      font-size: 12px;
-      color: #4ade80;
-      font-weight: bold;
-    }
-
-    .live-dot {
-      width: 8px;
-      height: 8px;
-      background-color: #22c55e;
-      border-radius: 50%;
-      box-shadow: 0 0 8px #22c55e;
-      animation: pulse 1.5s infinite;
-    }
-
-    @keyframes pulse {
-      0% { opacity: 1; transform: scale(1); }
-      50% { opacity: 0.4; transform: scale(1.2); }
-      100% { opacity: 1; transform: scale(1); }
-    }
-
-    /* 攝影機與骨架顯示區 (畫中畫 HUD) */
-    .video-container {
+    /* 右下角視訊與偵測骨架繪製視窗 */
+    .webcam-hud {
       position: absolute;
-      bottom: 24px;
-      right: 24px;
+      bottom: 20px;
+      right: 20px;
       width: 320px;
       height: 240px;
       z-index: 10;
-      border-radius: 16px;
+      border-radius: 12px;
       overflow: hidden;
-      background: rgba(15, 23, 42, 0.85);
-      border: 1px solid rgba(255, 255, 255, 0.15);
-      box-shadow: 0 10px 30px rgba(0, 0, 0, 0.6);
-      backdrop-filter: blur(8px);
-      display: flex;
-      justify-content: center;
-      align-items: center;
+      background: #000;
+      border: 2px solid rgba(56, 189, 248, 0.5);
+      box-shadow: 0 0 20px rgba(0, 0, 0, 0.8);
     }
 
-    #inputVideo {
-      display: none;
-    }
-
-    #cameraCanvas {
+    #webcam_canvas {
       width: 100%;
       height: 100%;
       object-fit: cover;
-      transform: scaleX(-1);
+      transform: scaleX(-1); /* 鏡像顯示 */
     }
 
-    .camera-label {
+    .hud-tag {
       position: absolute;
-      top: 10px;
-      left: 10px;
-      background: rgba(0, 0, 0, 0.6);
-      padding: 4px 10px;
-      border-radius: 12px;
+      top: 8px;
+      left: 8px;
+      background: rgba(0,0,0,0.6);
+      padding: 4px 8px;
+      border-radius: 6px;
       font-size: 11px;
-      color: #e5e7eb;
-      letter-spacing: 0.5px;
+      color: #38bdf8;
     }
 
-    /* 啟動攝影機按鈕蓋板 */
-    #startCamOverlay {
+    /* 左側狀態儀表板 */
+    .dashboard {
       position: absolute;
-      inset: 0;
-      background: rgba(15, 23, 42, 0.92);
-      display: flex;
-      flex-direction: column;
-      justify-content: center;
-      align-items: center;
-      z-index: 20;
-      padding: 16px;
-      text-align: center;
-    }
-
-    .start-btn {
-      background: linear-gradient(135deg, #38bdf8, #818cf8);
-      color: #ffffff;
-      border: none;
-      padding: 12px 24px;
-      border-radius: 12px;
-      font-size: 13px;
-      font-weight: 700;
-      cursor: pointer;
-      box-shadow: 0 4px 15px rgba(56, 189, 248, 0.4);
-      transition: transform 0.2s, box-shadow 0.2s;
-    }
-
-    .start-btn:hover {
-      transform: scale(1.05);
-      box-shadow: 0 6px 20px rgba(56, 189, 248, 0.6);
-    }
-
-    /* 左側狀態控制面板 */
-    .status-panel {
-      position: absolute;
-      top: 94px;
-      left: 24px;
-      width: 320px;
+      top: 85px;
+      left: 20px;
+      width: 280px;
       z-index: 10;
-      background: rgba(15, 23, 42, 0.75);
-      backdrop-filter: blur(12px);
-      border: 1px solid rgba(255, 255, 255, 0.12);
-      border-radius: 16px;
-      padding: 20px;
-      box-shadow: 0 10px 30px rgba(0, 0, 0, 0.5);
+      background: rgba(15, 23, 42, 0.8);
+      backdrop-filter: blur(10px);
+      border: 1px solid rgba(255, 255, 255, 0.15);
+      border-radius: 12px;
+      padding: 16px;
+      font-size: 13px;
     }
 
-    .panel-title {
-      font-size: 14px;
-      font-weight: 700;
-      text-transform: uppercase;
-      letter-spacing: 1px;
-      color: #9ca3af;
-      margin-bottom: 14px;
-      display: flex;
-      align-items: center;
-      gap: 8px;
-    }
-
-    .status-item {
+    .dash-row {
       display: flex;
       justify-content: space-between;
-      align-items: center;
-      margin-bottom: 12px;
-      font-size: 13px;
+      margin-bottom: 10px;
     }
 
-    .status-label {
+    .dash-label {
       color: #9ca3af;
     }
 
-    .status-value {
-      font-weight: 600;
-      padding: 3px 10px;
-      border-radius: 8px;
-      background: rgba(255, 255, 255, 0.05);
+    .dash-value {
+      font-weight: bold;
       color: #38bdf8;
-      font-size: 12px;
     }
 
-    .status-value.active {
-      background: rgba(34, 197, 94, 0.2);
+    .dash-value.open {
       color: #4ade80;
-      border: 1px solid rgba(34, 197, 94, 0.4);
     }
 
-    .status-value.closed {
-      background: rgba(239, 68, 68, 0.2);
+    .dash-value.closed {
       color: #f87171;
-      border: 1px solid rgba(239, 68, 68, 0.4);
-    }
-
-    .status-value.warning {
-      background: rgba(234, 179, 8, 0.2);
-      color: #fde047;
-      border: 1px solid rgba(234, 179, 8, 0.4);
-    }
-
-    .progress-bar-container {
-      width: 100%;
-      height: 6px;
-      background: rgba(255, 255, 255, 0.1);
-      border-radius: 3px;
-      overflow: hidden;
-      margin-top: 4px;
-    }
-
-    .progress-bar {
-      height: 100%;
-      width: 50%;
-      background: linear-gradient(90deg, #38bdf8, #818cf8);
-      transition: width 0.1s ease;
-    }
-
-    /* 形狀圖標按鈕組 */
-    .shape-selector {
-      display: flex;
-      gap: 6px;
-      margin-top: 14px;
-      justify-content: space-between;
-    }
-
-    .shape-btn {
-      flex: 1;
-      padding: 8px 4px;
-      background: rgba(255, 255, 255, 0.05);
-      border: 1px solid rgba(255, 255, 255, 0.1);
-      border-radius: 8px;
-      color: #d1d5db;
-      font-size: 11px;
-      cursor: pointer;
-      transition: all 0.2s;
-      text-align: center;
-    }
-
-    .shape-btn.active {
-      background: linear-gradient(135deg, rgba(56, 189, 248, 0.3), rgba(129, 140, 248, 0.3));
-      border-color: #38bdf8;
-      color: #ffffff;
-      box-shadow: 0 0 10px rgba(56, 189, 248, 0.3);
-    }
-
-    .shape-btn:hover {
-      background: rgba(255, 255, 255, 0.15);
-    }
-
-    /* 系統診斷日誌框 */
-    .log-box {
-      margin-top: 12px;
-      padding: 10px;
-      background: rgba(0, 0, 0, 0.6);
-      border: 1px solid rgba(255, 255, 255, 0.1);
-      border-radius: 8px;
-      font-size: 11px;
-      color: #38bdf8;
-      font-family: 'Consolas', monospace;
-      word-break: break-all;
-      max-height: 80px;
-      overflow-y: auto;
-      line-height: 1.4;
-    }
-
-    /* 指示輔助說明框 */
-    .instructions-card {
-      position: absolute;
-      bottom: 24px;
-      left: 24px;
-      width: 320px;
-      z-index: 10;
-      background: rgba(15, 23, 42, 0.75);
-      backdrop-filter: blur(12px);
-      border: 1px solid rgba(255, 255, 255, 0.12);
-      border-radius: 16px;
-      padding: 16px;
-      font-size: 12px;
-      color: #9ca3af;
-      line-height: 1.6;
-    }
-
-    .instructions-card h4 {
-      color: #f3f4f6;
-      margin-bottom: 6px;
-      font-size: 13px;
-    }
-
-    .instructions-card ul {
-      list-style-type: none;
-      padding-left: 0;
-    }
-
-    .instructions-card li {
-      margin-bottom: 4px;
-      display: flex;
-      align-items: center;
-      gap: 6px;
-    }
-
-    .instructions-card li::before {
-      content: '✦';
-      color: #38bdf8;
     }
   </style>
 </head>
 <body>
 
-  <!-- 頂部資訊 Bar -->
+  <!-- 頂部資訊頁首 -->
   <header>
     <div class="header-title">M88888888 欒帥資訊牆</div>
-    <div class="header-datetime">
-      <span class="live-badge"><span class="live-dot"></span>LIVE</span>
-      <span id="datetimeStr">2026/08/05 00:00:00</span>
-    </div>
+    <div class="header-datetime" id="datetimeText">2026/08/05 00:00:00</div>
   </header>
 
   <!-- 全螢幕粒子背景 Canvas -->
-  <canvas id="particleCanvas"></canvas>
+  <canvas id="particle_canvas"></canvas>
 
-  <!-- 左側即時狀態監控面板 -->
-  <div class="status-panel">
-    <div class="panel-title">
-      <svg width="16" height="16" fill="currentColor" viewBox="0 0 16 16"><path d="M8 15A7 7 0 1 1 8 1a7 7 0 0 1 0 14zm0 1A8 8 0 1 0 8 0a8 8 0 0 0 0 16z"/><path d="M8 13A5 5 0 1 1 8 3a5 5 0 0 1 0 10zm0 1A6 6 0 1 0 8 2a6 6 0 0 0 0 12z"/></svg>
-      右手控制狀態監控
+  <!-- 左側狀態儀表板 -->
+  <div class="dashboard">
+    <div style="font-weight:bold; margin-bottom:12px; color:#f3f4f6; border-bottom:1px solid rgba(255,255,255,0.1); padding-bottom:6px;">
+      ✋ 右手偵測與粒子狀態
     </div>
-
-    <div class="status-item">
-      <span class="status-label">系統狀態</span>
-      <span id="systemStatus" class="status-value warning">請點擊啟動鏡頭</span>
+    <div class="dash-row">
+      <span class="dash-label">右手偵測：</span>
+      <span class="dash-value" id="valHandState">搜尋右手中...</span>
     </div>
-
-    <div class="status-item">
-      <span class="status-label">右手偵測狀態</span>
-      <span id="handDetected" class="status-value">尋找右手中...</span>
+    <div class="dash-row">
+      <span class="dash-label">手掌動作：</span>
+      <span class="dash-value" id="valGesture">未偵測</span>
     </div>
-
-    <div class="status-item">
-      <span class="status-label">手掌狀態 (張開/握合)</span>
-      <span id="handGesture" class="status-value">未偵測</span>
+    <div class="dash-row">
+      <span class="dash-label">螢幕距離 (縮放)：</span>
+      <span class="dash-value" id="valDistance">1.00x</span>
     </div>
-
-    <div class="status-item">
-      <span class="status-label">與螢幕距離 (縮放比例)</span>
-      <span id="distanceValue" class="status-value">1.0x</span>
+    <div class="dash-row">
+      <span class="dash-label">當前圖形：</span>
+      <span class="dash-value" id="valShape">❤️ 愛心</span>
     </div>
-    <div class="progress-bar-container">
-      <div id="distanceBar" class="progress-bar"></div>
+    <div class="dash-row">
+      <span class="dash-label">色彩風格：</span>
+      <span class="dash-value" id="valColor">賽博霓虹</span>
     </div>
-
-    <div class="status-item" style="margin-top: 14px;">
-      <span class="status-label">當前粒子形狀</span>
-      <span id="currentShapeName" class="status-value">❤️ 愛心</span>
+    <div class="dash-row">
+      <span class="dash-label">握合切換次數：</span>
+      <span class="dash-value" id="valFistCount">0 次</span>
     </div>
-
-    <div class="status-item">
-      <span class="status-label">色彩主題風格</span>
-      <span id="colorThemeName" class="status-value">賽博霓虹</span>
-    </div>
-
-    <div class="status-item">
-      <span class="status-label">握合切換計數</span>
-      <span id="fistCount" class="status-value">0 次</span>
-    </div>
-
-    <!-- 手動切換形狀按鈕組 -->
-    <div style="margin-top: 12px; font-size: 11px; color: #9ca3af;">手動測試切換形狀：</div>
-    <div class="shape-selector">
-      <button class="shape-btn active" id="btnShape0">❤️ 愛心</button>
-      <button class="shape-btn" id="btnShape1">⭐ 星星</button>
-      <button class="shape-btn" id="btnShape2">🌸 花朵</button>
-      <button class="shape-btn" id="btnShape3">🪐 土星光環</button>
-      <button class="shape-btn" id="btnShape4">🌀 雙螺旋</button>
-    </div>
-
-    <div class="log-box" id="logBox">診斷日誌：等待點擊啟動...</div>
-  </div>
-
-  <!-- 左下角互動提示說明 -->
-  <div class="instructions-card">
-    <h4>✋ 右手手勢控制說明</h4>
-    <ul>
-      <li><b>右手張開</b>：粒子放大發散，散落於螢幕中。</li>
-      <li><b>右手握拳 (合起來)</b>：粒子向中心快速縮小聚集。</li>
-      <li><b>每一次握合觸發</b>：自動更換顯著不同的<b>色彩與形狀</b>。</li>
-      <li><b>靠近/遠離螢幕</b>：越靠近螢幕，整體粒子範圍越小。</li>
-    </ul>
   </div>
 
   <!-- 右下角鏡頭與骨架預覽 HUD -->
-  <div class="video-container">
-    <div id="startCamOverlay">
-      <div style="font-size: 12px; margin-bottom: 10px; color: #e5e7eb;">請確保透過 http://localhost:8000 存取</div>
-      <button class="start-btn" id="btnStartCam">點此啟動攝影機 📹</button>
-    </div>
-    <video id="inputVideo" playsinline></video>
-    <canvas id="cameraCanvas"></canvas>
-    <div class="camera-label">📹 人體與手部實體偵測畫面</div>
+  <div class="webcam-hud">
+    <video id="input_video" playsinline style="display:none;"></video>
+    <canvas id="webcam_canvas"></canvas>
+    <div class="hud-tag">📹 MediaPipe 實體畫面與偵測</div>
   </div>
 
-  <!-- JavaScript 邏輯實作 -->
+  <!-- JavaScript 邏輯程式碼 -->
   <script>
-    // ==========================================
-    // 1. 全域變數與函數定義
-    // ==========================================
-    var isRightHandDetected = false;
-    var isFistClosed = false;
-    var previousFistState = false;
-    var currentDistanceScale = 1.0;
-    var hands = null;
-    var pose = null;
-    var currentShapeIndex = 0;
-    var currentPaletteIndex = 0;
-    var fistCounter = 0;
-
-    function logMsg(msg) {
-      console.log('[系統日誌]', msg);
-      var logBox = document.getElementById('logBox');
-      if (logBox) {
-        logBox.textContent = msg;
-      }
-    }
-
-    // --- 日期時間更新 ---
-    function updateDateTime() {
+    // --- 1. 時間即時更新 ---
+    function updateClock() {
       var now = new Date();
-      var year = now.getFullYear();
-      var month = String(now.getMonth() + 1).padStart(2, '0');
-      var day = String(now.getDate()).padStart(2, '0');
-      var hours = String(now.getHours()).padStart(2, '0');
-      var minutes = String(now.getMinutes()).padStart(2, '0');
-      var seconds = String(now.getSeconds()).padStart(2, '0');
-      
-      var elem = document.getElementById('datetimeStr');
-      if (elem) elem.textContent = year + '/' + month + '/' + day + ' ' + hours + ':' + minutes + ':' + seconds;
+      var y = now.getFullYear();
+      var m = String(now.getMonth() + 1).padStart(2, '0');
+      var d = String(now.getDate()).padStart(2, '0');
+      var hh = String(now.getHours()).padStart(2, '0');
+      var mm = String(now.getMinutes()).padStart(2, '0');
+      var ss = String(now.getSeconds()).padStart(2, '0');
+      document.getElementById('datetimeText').textContent = y + '/' + m + '/' + d + ' ' + hh + ':' + mm + ':' + ss;
     }
-    setInterval(updateDateTime, 1000);
-    updateDateTime();
+    setInterval(updateClock, 1000);
+    updateClock();
 
-    // --- 粒子系統 (Particle System) ---
-    var pCanvas = document.getElementById('particleCanvas');
+    // --- 2. 粒子系統與形狀生成 (Particle Engine) ---
+    var pCanvas = document.getElementById('particle_canvas');
     var pCtx = pCanvas.getContext('2d');
-
     var width = pCanvas.width = window.innerWidth;
     var height = pCanvas.height = window.innerHeight;
 
     window.addEventListener('resize', function() {
       width = pCanvas.width = window.innerWidth;
       height = pCanvas.height = window.innerHeight;
-      generateShapeTargets(currentShapeIndex);
+      buildShape(currentShapeIdx);
     });
 
     var PARTICLE_COUNT = 1200;
     var particles = [];
 
     var SHAPES = [
-      { name: '❤️ 愛心', id: 'heart' },
-      { name: '⭐ 星星', id: 'star' },
-      { name: '🌸 花朵', id: 'flower' },
-      { name: '🪐 土星光環', id: 'saturn' },
-      { name: '🌀 雙螺旋', id: 'spiral' }
+      { name: '❤️ 愛心' },
+      { name: '⭐ 星星' },
+      { name: '🌸 花朵' },
+      { name: '🪐 土星光環' },
+      { name: '🌀 雙螺旋' }
     ];
 
     var PALETTES = [
@@ -515,196 +244,117 @@
       { name: '電光琉璃', colors: ['#06b6d4', '#3b82f6', '#1d4ed8', '#60a5fa', '#93c5fd'] }
     ];
 
-    function Particle() {
+    var currentShapeIdx = 0;
+    var currentPaletteIdx = 0;
+    var fistTriggerCount = 0;
+    var isFistClosed = false;
+    var lastFistState = false;
+    var distanceScale = 1.0;
+    var isRightHandFound = false;
+
+    function ParticleObj() {
       this.x = Math.random() * width;
       this.y = Math.random() * height;
-      this.targetX = this.x;
-      this.targetY = this.y;
       this.baseX = this.x;
       this.baseY = this.y;
       this.size = Math.random() * 2.5 + 1.5;
       this.color = '#38bdf8';
-      this.ease = 0.08;
     }
 
-    Particle.prototype.update = function(isClosed, handDistanceScale, isHandPresent) {
+    ParticleObj.prototype.update = function() {
       var centerX = width / 2;
       var centerY = height / 2;
 
-      var activeTargetX = centerX + (this.baseX - centerX) * handDistanceScale;
-      var activeTargetY = centerY + (this.baseY - centerY) * handDistanceScale;
+      var targetX = centerX + (this.baseX - centerX) * distanceScale;
+      var targetY = centerY + (this.baseY - centerY) * distanceScale;
 
-      if (isClosed) {
-        activeTargetX = centerX + (this.baseX - centerX) * 0.15 * handDistanceScale;
-        activeTargetY = centerY + (this.baseY - centerY) * 0.15 * handDistanceScale;
+      if (isFistClosed) {
+        // 握合時：粒子縮起來收攏至中心
+        targetX = centerX + (this.baseX - centerX) * 0.15 * distanceScale;
+        targetY = centerY + (this.baseY - centerY) * 0.15 * distanceScale;
       } else {
-        activeTargetX += Math.sin(Date.now() * 0.002 + this.size) * 12;
-        activeTargetY += Math.cos(Date.now() * 0.002 + this.size) * 12;
+        // 張開時：粒子放大發散飄動
+        targetX += Math.sin(Date.now() * 0.002 + this.size) * 12;
+        targetY += Math.cos(Date.now() * 0.002 + this.size) * 12;
       }
 
-      this.x += (activeTargetX - this.x) * this.ease;
-      this.y += (activeTargetY - this.y) * this.ease;
+      this.x += (targetX - this.x) * 0.08;
+      this.y += (targetY - this.y) * 0.08;
     };
 
-    Particle.prototype.draw = function(ctx) {
+    ParticleObj.prototype.draw = function(ctx) {
       ctx.beginPath();
       ctx.arc(this.x, this.y, this.size, 0, Math.PI * 2);
       ctx.fillStyle = this.color;
-      ctx.shadowBlur = 10;
+      ctx.shadowBlur = 8;
       ctx.shadowColor = this.color;
       ctx.fill();
     };
 
     for (var i = 0; i < PARTICLE_COUNT; i++) {
-      particles.push(new Particle());
+      particles.push(new ParticleObj());
     }
 
-    function generateShapeTargets(shapeIndex) {
+    function buildShape(shapeIdx) {
       var centerX = width / 2;
       var centerY = height / 2;
       var minDim = Math.min(width, height) * 0.35;
-      var currentPalette = PALETTES[currentPaletteIndex].colors;
+      var palette = PALETTES[currentPaletteIdx].colors;
 
       for (var i = 0; i < PARTICLE_COUNT; i++) {
         var p = particles[i];
         var t = (i / PARTICLE_COUNT) * Math.PI * 2;
-        var tx = 0;
-        var ty = 0;
+        var tx = 0, ty = 0;
 
-        switch (shapeIndex) {
-          case 0:
-            {
-              var angle = t * 2;
-              var r = minDim * 0.04;
-              tx = 16 * Math.pow(Math.sin(angle), 3);
-              ty = -(13 * Math.cos(angle) - 5 * Math.cos(2 * angle) - 2 * Math.cos(3 * angle) - Math.cos(4 * angle));
-              tx = tx * r + (Math.random() - 0.5) * 20;
-              ty = ty * r + (Math.random() - 0.5) * 20;
+        switch (shapeIdx) {
+          case 0: // 愛心
+            var angle = t * 2;
+            var r = minDim * 0.04;
+            tx = 16 * Math.pow(Math.sin(angle), 3);
+            ty = -(13 * Math.cos(angle) - 5 * Math.cos(2 * angle) - 2 * Math.cos(3 * angle) - Math.cos(4 * angle));
+            tx = tx * r + (Math.random() - 0.5) * 15;
+            ty = ty * r + (Math.random() - 0.5) * 15;
+            break;
+
+          case 1: // 五角星
+            var starPoints = 5;
+            var a = t * starPoints;
+            var innerR = minDim * 0.4;
+            var outerR = minDim * 0.85;
+            var radius = innerR + (outerR - innerR) * Math.pow(Math.abs(Math.sin(a * 2.5)), 2);
+            tx = radius * Math.cos(t);
+            ty = radius * Math.sin(t);
+            break;
+
+          case 2: // 花朵
+            var k = 6;
+            var radius = minDim * (0.3 + 0.6 * Math.abs(Math.cos(k * t / 2)));
+            tx = radius * Math.cos(t);
+            ty = radius * Math.sin(t);
+            break;
+
+          case 3: // 土星光環
+            if (i < PARTICLE_COUNT * 0.3) {
+              var phi = Math.acos(2 * Math.random() - 1);
+              var theta = 2 * Math.PI * Math.random();
+              var radius = minDim * 0.35 * Math.cbrt(Math.random());
+              tx = radius * Math.sin(phi) * Math.cos(theta);
+              ty = radius * Math.sin(phi) * Math.sin(theta);
+            } else {
+              var ringR = minDim * (0.65 + Math.random() * 0.3);
+              var ringA = t * 3;
+              var rx = ringR * Math.cos(ringA);
+              var ry = ringR * 0.3 * Math.sin(ringA);
+              var tilt = 0.45;
+              tx = rx * Math.cos(tilt) - ry * Math.sin(tilt);
+              ty = rx * Math.sin(tilt) + ry * Math.cos(tilt);
             }
             break;
 
-          case 1:
-            {
-              var starPoints = 5;
-              var angle = t * starPoints;
-              var innerRadius = minDim * 0.4;
-              var outerRadius = minDim * 0.85;
-              var r = innerRadius + (outerRadius - innerRadius) * Math.pow(Math.abs(Math.sin(angle * 2.5)), 2);
-              tx = r * Math.cos(t);
-              ty = r * Math.sin(t);
-            }
-            break;
-
-          case 2:
-            {
-              var k = 6;
-              var r = minDim * (0.3 + 0.6 * Math.abs(Math.cos(k * t / 2)));
-              tx = r * Math.cos(t);
-              ty = r * Math.sin(t);
-            }
-            break;
-
-          case 3:
-            {
-              if (i < PARTICLE_COUNT * 0.3) {
-                var phi = Math.acos(2 * Math.random() - 1);
-                var theta = 2 * Math.PI * Math.random();
-                var r = minDim * 0.35 * Math.cbrt(Math.random());
-                tx = r * Math.sin(phi) * Math.cos(theta);
-                ty = r * Math.sin(phi) * Math.sin(theta);
-              } else {
-                var ringRadius = minDim * (0.65 + Math.random() * 0.3);
-                var ringAngle = t * 3;
-                var rx = ringRadius * Math.cos(ringAngle);
-                var ry = ringRadius * 0.3 * Math.sin(ringAngle);
-                var tilt = 0.45;
-                tx = rx * Math.cos(tilt) - ry * Math.sin(tilt);
-                ty = rx * Math.sin(tilt) + ry * Math.cos(tilt);
-              }
-            }
-            break;
-
-          case 4:
-            {
-              var turns = 4;
-              var angle = t * turns * Math.PI;
-              var strand = (i % 2 === 0) ? 1 : -1;
-              var radius = minDim * 0.6;
-              var len = (i / PARTICLE_COUNT - 0.5) * minDim * 1.6;
-
-              tx = Math.cos(angle) * radius * 0.4 + strand * 30;
-              ty = len;
-            }
-            break;
-        }
-
-        p.baseX = centerX + tx;
-        p.baseY = centerY + ty;
-        p.color = currentPalette[i % currentPalette.length];
-      }
-    }
-
-    generateShapeTargets(currentShapeIndex);
-
-    function selectShape(idx) {
-      currentShapeIndex = idx;
-      for (var i = 0; i < 5; i++) {
-        var btn = document.getElementById('btnShape' + i);
-        if (btn) btn.classList.toggle('active', i === idx);
-      }
-      var nameElem = document.getElementById('currentShapeName');
-      if (nameElem) nameElem.textContent = SHAPES[idx].name;
-      generateShapeTargets(currentShapeIndex);
-      logMsg('切換形狀至：' + SHAPES[idx].name);
-    }
-    window.selectShape = selectShape;
-
-    function triggerNextShapeAndColor() {
-      fistCounter++;
-      var fistElem = document.getElementById('fistCount');
-      if (fistElem) fistElem.textContent = fistCounter + ' 次';
-
-      currentShapeIndex = (currentShapeIndex + 1) % SHAPES.length;
-      selectShape(currentShapeIndex);
-
-      currentPaletteIndex = (currentPaletteIndex + 1) % PALETTES.length;
-      var themeElem = document.getElementById('colorThemeName');
-      if (themeElem) themeElem.textContent = PALETTES[currentPaletteIndex].name;
-
-      generateShapeTargets(currentShapeIndex);
-    }
-
-    function animateParticles() {
-      pCtx.fillStyle = 'rgba(3, 7, 18, 0.25)';
-      pCtx.fillRect(0, 0, width, height);
-
-      pCtx.globalCompositeOperation = 'lighter';
-
-      for (var i = 0; i < PARTICLE_COUNT; i++) {
-        particles[i].update(isFistClosed, currentDistanceScale, isRightHandDetected);
-        particles[i].draw(pCtx);
-      }
-
-      pCtx.globalCompositeOperation = 'source-over';
-      requestAnimationFrame(animateParticles);
-    }
-    animateParticles();
-
-
-    // --- MediaPipe & 直連 Camera 偵測邏輯 ---
-    var videoElement = document.getElementById('inputVideo');
-    var cameraCanvas = document.getElementById('cameraCanvas');
-    var cameraCtx = cameraCanvas.getContext('2d');
-
-    function initMediaPipe() {
-      try {
-        if (typeof Hands === 'undefined') {
-          logMsg('錯誤：MediaPipe CDN 腳本未成功載入，請確認網路連線');
-          return false;
-        }
-
-        hands = new Hands({
-          locateFile: function(file) { return 'https://cdn.jsdelivr.net/npm/@mediapipe/hands/' + file; }
-        });
-
-        hands.setOptions
+          case 4: // 雙螺旋
+            var turns = 4;
+            var a = t * turns * Math.PI;
+            var strand = (i % 2 === 0) ? 1 : -1;
+            var radius = minDim * 0.6;
+            var len = (i / PARTICLE_COUNT - 0.5) * minDim * 1.6;
+            tx
